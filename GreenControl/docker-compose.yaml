@@ -1,0 +1,16 @@
+services:
+  oracle-xe:
+    image: gvenzl/oracle-xe:latest
+    container_name: oracle_xe
+    ports:
+      - "1521:1521" # Puerto Oracle
+      - "5500:5500" # Enterprise Manager opcional
+    environment:
+      ORACLE_PASSWORD: "admin" # Contraseña SYSTEM y SYS
+      APP_USER: "GREEN"              # tu usuario de la app
+      APP_USER_PASSWORD: "admin"
+    volumes:
+      - oracle_xe_data:/opt/oracle/oradata
+
+volumes:
+  oracle_xe_data:
