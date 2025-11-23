@@ -101,6 +101,12 @@ namespace GreenControl.Infrastructure.Data
                     .WithMany(u => u.Gastos)
                     .HasForeignKey(g => g.UsuarioId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(g => g.Parcela)
+                    .WithMany(p => p.Gastos)
+                    .HasForeignKey(g => g.ParcelaId)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<Ingreso>(entity =>
@@ -115,6 +121,12 @@ namespace GreenControl.Infrastructure.Data
                     .WithMany(u => u.Ingresos)
                     .HasForeignKey(i => i.UsuarioId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(i => i.Parcela)
+                    .WithMany(p => p.Ingresos)
+                    .HasForeignKey(i => i.ParcelaId)
+                    .IsRequired(false)
+                    .OnDelete(DeleteBehavior.SetNull);
             });
 
             modelBuilder.Entity<Tarea>(entity =>

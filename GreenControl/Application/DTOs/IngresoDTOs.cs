@@ -16,6 +16,7 @@ namespace GreenControl.Application.DTOs
         public string Concepto { get; set; }
 
         public string? NotaAdicional { get; set; }
+        public int? ParcelaId { get; set; }
     }
 
     public class IngresoResponse
@@ -25,5 +26,8 @@ namespace GreenControl.Application.DTOs
         public decimal Monto { get; set; }
         public string Concepto { get; set; }
         public string? NotaAdicional { get; set; }
+        public int? ParcelaId { get; set; }
+        public string? NombreParcela { get; set; }
+        public bool EsGeneral { get; set; }
     }
 }
