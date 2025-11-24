@@ -35,6 +35,33 @@ export function NavSidebar({
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
   const pathname = usePathname();
 
+  const findMostSpecificUrl = () => {
+    let bestMatch = "";
+
+    items.forEach((item) => {
+      if (pathname === item.url || pathname.startsWith(item.url + "/")) {
+        if (item.url.length > bestMatch.length) {
+          bestMatch = item.url;
+        }
+      }
+
+      item.items?.forEach((sub) => {
+        if (pathname === sub.url || pathname.startsWith(sub.url + "/")) {
+          if (sub.url.length > bestMatch.length) {
+            bestMatch = sub.url;
+          }
+        }
+      });
+    });
+
+    return bestMatch;
+  };
+
+  const activeUrl = findMostSpecificUrl();
+
+  const finalActiveUrl =
+    activeUrl === "/panel" && pathname !== "/panel" ? "" : activeUrl;
+
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent className="flex flex-col">
@@ -47,7 +74,7 @@ export function NavSidebar({
                   <SidebarMenuButton
                     tooltip={item.title}
                     asChild
-                    isActive={pathname === item.url}
+                    isActive={finalActiveUrl === item.url}
                   >
                     <Link href={item.url}>
                       {item.icon && <item.icon />}
@@ -59,7 +86,7 @@ export function NavSidebar({
                       <SidebarMenuSubItem key={subItem.title}>
                         <SidebarMenuSubButton
                           asChild
-                          isActive={pathname === subItem.url}
+                          isActive={finalActiveUrl === subItem.url}
                         >
                           <Link href={subItem.url}>
                             <span>{subItem.title}</span>
@@ -76,7 +103,7 @@ export function NavSidebar({
                 <SidebarMenuButton
                   tooltip={item.title}
                   asChild
-                  isActive={pathname === item.url}
+                  isActive={finalActiveUrl === item.url}
                 >
                   <Link href={item.url}>
                     {item.icon && <item.icon />}

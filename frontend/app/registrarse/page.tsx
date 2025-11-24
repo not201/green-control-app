@@ -75,7 +75,8 @@ export default function RegisterPage() {
 
       const data = await response.json();
 
-      localStorage.setItem("jwToken", data.data.token);
+      document.cookie = `jwToken=${data.token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+      localStorage.setItem("jwToken", data.token);
 
       router.push("/panel");
     } catch (err) {

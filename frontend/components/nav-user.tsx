@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/sidebar";
 import { ThemeToggle, useTheme } from "./theme-toggle";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function NavUser({
   user,
@@ -40,10 +41,19 @@ export function NavUser({
 }) {
   const isDark = useTheme();
   const { isMobile } = useSidebar();
+  const router = useRouter();
 
   const nombreCompleto = user.apellido
     ? `${user.nombre} ${user.apellido}`
     : user.nombre;
+
+  const handleLogout = () => {
+    document.cookie =
+      "jwToken=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+
+    localStorage.removeItem("jwToken");
+    router.push("/");
+  };
 
   return (
     <SidebarMenu>
@@ -119,7 +129,7 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <IconLogout />
               Cerrar sesión
             </DropdownMenuItem>

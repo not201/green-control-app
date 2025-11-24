@@ -1,22 +1,51 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react";
-import { CartesianGrid, Line, LineChart, XAxis } from "recharts";
 import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
-import { IconLoader } from "@tabler/icons-react";
+  ColumnDef,
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table";
+import {
+  IconChevronDown,
+  IconChevronLeft,
+  IconChevronRight,
+  IconChevronsLeft,
+  IconChevronsRight,
+  IconLayoutColumns,
+} from "@tabler/icons-react";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface Ingreso {
   id: number;
@@ -24,6 +53,9 @@ interface Ingreso {
   monto: number;
   concepto: string;
   notaAdicional: string | null;
+  parcelaId: number | null;
+  nombreParcela: string | null;
+  esGeneral: boolean;
 }
 
 interface Gasto {
@@ -32,38 +64,152 @@ interface Gasto {
   monto: number;
   concepto: string;
   notaAdicional: string | null;
+  parcelaId: number | null;
+  nombreParcela: string | null;
+  esGeneral: boolean;
 }
 
-interface AnaliticaTemporal {
-  mes: string;
+interface RentabilidadParcela {
+  nombreParcela: string;
   ingresos: number;
   gastos: number;
+  balance: number;
+  margen: number;
 }
 
 interface AnaliticasData {
-  analiticasTemporales: AnaliticaTemporal[];
   totales: {
     ingresosTotales: number;
     gastosTotales: number;
     balanceTotal: number;
     margenPromedio: number;
   };
+  rentabilidadPorParcela: RentabilidadParcela[];
 }
 
-const chartConfig = {
-  ingresos: {
-    label: "Ingresos",
-    color: "#10b981",
+const columns: ColumnDef<RentabilidadParcela>[] = [
+  {
+    accessorKey: "nombreParcela",
+    header: "Parcela",
+    cell: ({ row }) => (
+      <div className="font-medium">{row.getValue("nombreParcela")}</div>
+    ),
   },
-  gastos: {
-    label: "Gastos",
-    color: "#ef4444",
+  {
+    accessorKey: "ingresos",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="hover:bg-transparent -ml-4"
+        >
+          Ingresos
+          <IconChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="text-green-600 dark:text-green-400 font-semibold">
+        ${row.getValue<number>("ingresos").toLocaleString("es-CO")}
+      </div>
+    ),
   },
-} satisfies ChartConfig;
+  {
+    accessorKey: "gastos",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="hover:bg-transparent -ml-4"
+        >
+          Gastos
+          <IconChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => (
+      <div className="text-red-600 dark:text-red-400 font-semibold">
+        ${row.getValue<number>("gastos").toLocaleString("es-CO")}
+      </div>
+    ),
+  },
+  {
+    accessorKey: "balance",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="hover:bg-transparent -ml-4"
+        >
+          Balance
+          <IconChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const balance = row.getValue<number>("balance");
+      return (
+        <div
+          className={`font-bold ${
+            balance >= 0
+              ? "text-blue-600 dark:text-blue-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
+          ${balance.toLocaleString("es-CO")}
+        </div>
+      );
+    },
+  },
+  {
+    accessorKey: "margen",
+    header: ({ column }) => {
+      return (
+        <Button
+          variant="ghost"
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          className="hover:bg-transparent -ml-4"
+        >
+          Margen (%)
+          <IconChevronDown className="ml-2 h-4 w-4" />
+        </Button>
+      );
+    },
+    cell: ({ row }) => {
+      const margen = row.getValue<number>("margen");
+      return (
+        <div
+          className={`font-bold ${
+            margen >= 0
+              ? "text-purple-600 dark:text-purple-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
+          {margen.toFixed(1)}%
+        </div>
+      );
+    },
+  },
+];
 
 export default function ContabilidadPage() {
   const [data, setData] = useState<AnaliticasData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sorting, setSorting] = useState<SortingState>([
+    { id: "margen", desc: true },
+  ]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+  const [sortOrder, setSortOrder] = useState<"mas-rentable" | "menos-rentable">(
+    "mas-rentable",
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,7 +223,6 @@ export default function ContabilidadPage() {
               },
             },
           );
-
           return res;
         };
 
@@ -122,76 +267,66 @@ export default function ContabilidadPage() {
         const margenPromedio =
           ingresosTotales > 0 ? (balanceTotal / ingresosTotales) * 100 : 0;
 
-        const mesesMap = new Map<
+        const parcelasMap = new Map<
           string,
           { ingresos: number; gastos: number }
         >();
 
         ingresos.forEach((ingreso) => {
-          const fecha = new Date(ingreso.fecha);
-          const fechaValida = fecha.getFullYear() > 1 ? fecha : new Date();
-
-          const mesKey = fechaValida.toLocaleDateString("es-CO", {
-            year: "numeric",
-            month: "short",
-          });
-
-          if (!mesesMap.has(mesKey)) {
-            mesesMap.set(mesKey, { ingresos: 0, gastos: 0 });
+          if (!ingreso.esGeneral && ingreso.nombreParcela) {
+            if (!parcelasMap.has(ingreso.nombreParcela)) {
+              parcelasMap.set(ingreso.nombreParcela, {
+                ingresos: 0,
+                gastos: 0,
+              });
+            }
+            const parcela = parcelasMap.get(ingreso.nombreParcela)!;
+            parcela.ingresos += ingreso.monto;
           }
-          const mes = mesesMap.get(mesKey)!;
-          mes.ingresos += ingreso.monto;
         });
 
         gastos.forEach((gasto) => {
-          const fecha = new Date(gasto.fecha);
-          const fechaValida = fecha.getFullYear() > 1 ? fecha : new Date();
-
-          const mesKey = fechaValida.toLocaleDateString("es-CO", {
-            year: "numeric",
-            month: "short",
-          });
-
-          if (!mesesMap.has(mesKey)) {
-            mesesMap.set(mesKey, { ingresos: 0, gastos: 0 });
+          if (!gasto.esGeneral && gasto.nombreParcela) {
+            if (!parcelasMap.has(gasto.nombreParcela)) {
+              parcelasMap.set(gasto.nombreParcela, { ingresos: 0, gastos: 0 });
+            }
+            const parcela = parcelasMap.get(gasto.nombreParcela)!;
+            parcela.gastos += gasto.monto;
           }
-          const mes = mesesMap.get(mesKey)!;
-          mes.gastos += gasto.monto;
         });
 
-        const analiticasTemporales: AnaliticaTemporal[] = Array.from(
-          mesesMap.entries(),
-        )
-          .sort((a, b) => {
-            const dateA = new Date(a[0]);
-            const dateB = new Date(b[0]);
-            return dateA.getTime() - dateB.getTime();
-          })
-          .map(([mes, datos]) => ({
-            mes,
-            ingresos: datos.ingresos,
-            gastos: datos.gastos,
-          }));
+        const rentabilidadPorParcela: RentabilidadParcela[] = Array.from(
+          parcelasMap.entries(),
+        ).map(([nombreParcela, datos]) => ({
+          nombreParcela,
+          ingresos: datos.ingresos,
+          gastos: datos.gastos,
+          balance: datos.ingresos - datos.gastos,
+          margen:
+            datos.ingresos > 0
+              ? ((datos.ingresos - datos.gastos) / datos.ingresos) * 100
+              : 0,
+        }));
 
         setData({
-          analiticasTemporales,
           totales: {
             ingresosTotales,
             gastosTotales,
             balanceTotal,
             margenPromedio,
           },
+          rentabilidadPorParcela,
         });
       } catch (error) {
         console.error("Error fetching analiticas:", error);
         setData({
-          analiticasTemporales: [],
           totales: {
             ingresosTotales: 0,
             gastosTotales: 0,
             balanceTotal: 0,
             margenPromedio: 0,
           },
+          rentabilidadPorParcela: [],
         });
       } finally {
         setLoading(false);
@@ -201,9 +336,32 @@ export default function ContabilidadPage() {
     fetchData();
   }, []);
 
-  const tendencia =
-    data && data.totales.balanceTotal >= 0 ? "positiva" : "negativa";
-  const porcentajeTendencia = data && Math.abs(data.totales.margenPromedio);
+  useEffect(() => {
+    if (sortOrder === "mas-rentable") {
+      setSorting([{ id: "margen", desc: true }]);
+    } else {
+      setSorting([{ id: "margen", desc: false }]);
+    }
+  }, [sortOrder]);
+
+  const table = useReactTable({
+    data: data?.rentabilidadPorParcela || [],
+    columns,
+    state: {
+      sorting,
+      columnVisibility,
+      columnFilters,
+      pagination,
+    },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  });
 
   return (
     <div className="flex flex-col gap-4 md:gap-6">
@@ -308,82 +466,206 @@ export default function ContabilidadPage() {
             </Card>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Evolución Financiera</CardTitle>
-                <CardDescription>
-                  Comparación mensual de ingresos y gastos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.analiticasTemporales &&
-                data.analiticasTemporales.length > 0 ? (
-                  <ChartContainer config={chartConfig}>
-                    <LineChart
-                      accessibilityLayer
-                      data={data.analiticasTemporales}
-                      margin={{ top: 12, bottom: 0, left: 12, right: 12 }}
-                    >
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="mes"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        tickFormatter={(value) => value.slice(0, 3)}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent />}
-                      />
-                      <Line
-                        dataKey="ingresos"
-                        type="monotone"
-                        stroke="var(--color-ingresos)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        dataKey="gastos"
-                        type="monotone"
-                        stroke="var(--color-gastos)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ChartContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                    No hay datos disponibles para mostrar
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>Rentabilidad por parcela</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="sort-order" className="sr-only">
+                    Ordenar por
+                  </Label>
+                  <Select
+                    value={sortOrder}
+                    onValueChange={(value: "mas-rentable" | "menos-rentable") =>
+                      setSortOrder(value)
+                    }
+                  >
+                    <SelectTrigger className="w-fit" size="sm" id="sort-order">
+                      <SelectValue placeholder="Ordenar por" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="mas-rentable">Más rentable</SelectItem>
+                      <SelectItem value="menos-rentable">
+                        Menos rentable
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <IconLayoutColumns className="h-4 w-4" />
+                        <span className="hidden lg:inline">Columnas</span>
+                        <IconChevronDown className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {table
+                        .getAllColumns()
+                        .filter(
+                          (column) =>
+                            typeof column.accessorFn !== "undefined" &&
+                            column.getCanHide(),
+                        )
+                        .map((column) => {
+                          return (
+                            <DropdownMenuCheckboxItem
+                              key={column.id}
+                              className="capitalize"
+                              checked={column.getIsVisible()}
+                              onCheckedChange={(value) =>
+                                column.toggleVisibility(!!value)
+                              }
+                            >
+                              {column.id}
+                            </DropdownMenuCheckboxItem>
+                          );
+                        })}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-hidden rounded-lg border">
+                <Table>
+                  <TableHeader className="bg-muted sticky top-0 z-10">
+                    {table.getHeaderGroups().map((headerGroup) => (
+                      <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => {
+                          return (
+                            <TableHead key={header.id}>
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(
+                                    header.column.columnDef.header,
+                                    header.getContext(),
+                                  )}
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                    ))}
+                  </TableHeader>
+                  <TableBody>
+                    {table.getRowModel().rows?.length ? (
+                      table.getRowModel().rows.map((row) => (
+                        <TableRow
+                          key={row.id}
+                          data-state={row.getIsSelected() && "selected"}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id}>
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={columns.length}
+                          className="h-24 text-center"
+                        >
+                          No hay datos de parcelas con ingresos o gastos.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {table.getRowModel().rows?.length > 0 && (
+                <div className="flex items-center justify-between mt-4">
+                  <div className="text-muted-foreground hidden flex-1 text-sm lg:flex">
+                    Mostrando {table.getRowModel().rows.length} parcela(s)
                   </div>
-                )}
-              </CardContent>
-              {data.analiticasTemporales &&
-                data.analiticasTemporales.length > 0 && (
-                  <div className="border-t px-6 pt-6">
-                    <div className="flex w-full items-start gap-2 text-sm">
-                      <div className="grid gap-2">
-                        <div className="flex items-center gap-2 leading-none font-medium">
-                          Tendencia {tendencia} del{" "}
-                          {porcentajeTendencia?.toFixed(1)}%{" "}
-                          {tendencia === "positiva" ? (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-red-600" />
-                          )}
-                        </div>
-                        <div className="text-muted-foreground flex items-center gap-2 leading-none">
-                          Mostrando análisis financiero de{" "}
-                          {data.analiticasTemporales.length} mes
-                          {data.analiticasTemporales.length !== 1 ? "es" : ""}
-                        </div>
-                      </div>
+                  <div className="flex w-full items-center gap-8 lg:w-fit">
+                    <div className="hidden items-center gap-2 lg:flex">
+                      <Label
+                        htmlFor="rows-per-page"
+                        className="text-sm font-medium"
+                      >
+                        Filas por página
+                      </Label>
+                      <Select
+                        value={`${table.getState().pagination.pageSize}`}
+                        onValueChange={(value) => {
+                          table.setPageSize(Number(value));
+                        }}
+                      >
+                        <SelectTrigger
+                          size="sm"
+                          className="w-20"
+                          id="rows-per-page"
+                        >
+                          <SelectValue
+                            placeholder={table.getState().pagination.pageSize}
+                          />
+                        </SelectTrigger>
+                        <SelectContent side="top">
+                          {[5, 10, 20, 30].map((pageSize) => (
+                            <SelectItem key={pageSize} value={`${pageSize}`}>
+                              {pageSize}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex w-fit items-center justify-center text-sm font-medium">
+                      Página {table.getState().pagination.pageIndex + 1} de{" "}
+                      {table.getPageCount()}
+                    </div>
+                    <div className="ml-auto flex items-center gap-2 lg:ml-0">
+                      <Button
+                        variant="outline"
+                        className="hidden h-8 w-8 p-0 lg:flex"
+                        onClick={() => table.setPageIndex(0)}
+                        disabled={!table.getCanPreviousPage()}
+                      >
+                        <span className="sr-only">Ir a primera página</span>
+                        <IconChevronsLeft />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="size-8"
+                        size="icon"
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                      >
+                        <span className="sr-only">Ir a página anterior</span>
+                        <IconChevronLeft />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="size-8"
+                        size="icon"
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                      >
+                        <span className="sr-only">Ir a página siguiente</span>
+                        <IconChevronRight />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="hidden size-8 lg:flex"
+                        size="icon"
+                        onClick={() =>
+                          table.setPageIndex(table.getPageCount() - 1)
+                        }
+                        disabled={!table.getCanNextPage()}
+                      >
+                        <span className="sr-only">Ir a última página</span>
+                        <IconChevronsRight />
+                      </Button>
                     </div>
                   </div>
-                )}
-            </Card>
-          </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
     </div>
