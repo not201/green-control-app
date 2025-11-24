@@ -1,7 +1,7 @@
 "use client";
 
 import { DatePicker } from "@/components/date-picker";
-import { SiembraCard } from "@/components/siembra-card";
+import { GastoCard } from "@/components/gasto-card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -24,17 +25,14 @@ import { IconLoader } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
 import * as React from "react";
 
-interface Siembra {
+interface Gasto {
   id: number;
-  nombreParcela: string;
-  nombreCultivo: string;
-  activa: boolean;
-}
+  fecha: string;
+  monto: number;
+  concepto: string;
 
-interface Cultivo {
-  id: number;
-  nombre: string;
-  especie: string;
+  nombreParcela?: string;
+  esGeneral: boolean;
 }
 
 interface Parcela {
@@ -44,35 +42,36 @@ interface Parcela {
   tieneSiembra: boolean;
 }
 
-export default function SiembrasPage() {
-  const [cultivos, setCultivos] = React.useState<Cultivo[]>([]);
-  const [parcelas, setParcelas] = React.useState<Parcela[]>([]);
-  const [filtroEstado, setFiltroEstado] = React.useState("todas");
-  const [siembras, setSiembras] = React.useState<Siembra[]>([]);
+export default function GastosPage() {
+  const [gastos, setGastos] = React.useState<Gasto[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [parcelas, setParcelas] = React.useState<Parcela[]>([]);
   const [submitting, setSubmitting] = React.useState(false);
   const [formError, setFormError] = React.useState("");
+  const [filtroEstado, setFiltroEstado] = React.useState("todos");
   const [open, setOpen] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     new Date(),
   );
   const [formData, setFormData] = React.useState({
-    parcelaId: "",
-    cultivoId: "",
+    monto: "",
+    concepto: "",
+    notaAdicional: "",
+    parcelaId: undefined as string | undefined,
   });
 
   React.useEffect(() => {
-    const fetchSiembra = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Siembra`, {
+    const fetchGasto = async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Gasto`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
         },
       });
 
       if (res.ok) {
-        const { data }: { data: Siembra[] } = await res.json();
+        const { data }: { data: Gasto[] } = await res.json();
 
-        setSiembras(data);
+        setGastos(data);
 
         setLoading(false);
       }
@@ -94,65 +93,51 @@ export default function SiembrasPage() {
       }
     };
 
-    const fetchCultivo = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Cultivo`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
-        },
-      });
-
-      if (res.ok) {
-        const { data }: { data: Cultivo[] } = await res.json();
-
-        setCultivos(data);
-
-        setLoading(false);
-      }
-    };
-
-    fetchCultivo();
     fetchParcela();
-    fetchSiembra();
+    fetchGasto();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
 
-    if (!formData.parcelaId.trim()) {
-      setFormError("La parcela es requerida");
+    if (!formData.monto.trim()) {
+      setFormError("El monto es requerido");
       return;
     }
 
-    if (!formData.cultivoId.trim()) {
-      setFormError("El cultivo es requerido");
+    if (!formData.concepto.trim()) {
+      setFormError("El concepto es requerido");
       return;
     }
 
     if (!selectedDate) {
-      setFormError("La fecha es requerida");
+      setFormError("La fecha de gasto es requerida");
       return;
     }
 
     setSubmitting(true);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Siembra`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Gasto`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
       },
       body: JSON.stringify({
-        cultivoId: formData.cultivoId,
+        monto: formData.monto,
+        concepto: formData.concepto,
+        fecha: selectedDate,
+
+        notaAdicional: formData.notaAdicional,
         parcelaId: formData.parcelaId,
-        fechaInicio: selectedDate,
       }),
     });
 
     if (!res.ok) {
       const errorData = await res.json();
 
-      setFormError(errorData.mensaje);
+      setFormError("Error al crear gasto");
       console.log(errorData);
 
       setSubmitting(false);
@@ -160,30 +145,35 @@ export default function SiembrasPage() {
       return;
     }
 
-    const { data }: { data: Siembra } = await res.json();
+    const { data }: { data: Gasto } = await res.json();
 
-    setSiembras((prev) => [
+    setGastos((prev) => [
       ...prev,
       {
         id: data.id,
+        fecha: data.fecha,
+        monto: data.monto,
+        concepto: data.concepto,
+
         nombreParcela: data.nombreParcela,
-        nombreCultivo: data.nombreCultivo,
-        activa: data.activa,
+        esGeneral: data.esGeneral,
       },
     ]);
 
     setFormData({
-      cultivoId: "",
-      parcelaId: "",
+      concepto: "",
+      monto: "",
+      notaAdicional: "",
+      parcelaId: undefined as string | undefined,
     });
 
     setOpen(false);
     setSubmitting(false);
   };
 
-  const siembrasFiltradas = siembras.filter((s) => {
-    if (filtroEstado === "enProceso") return s.activa === true;
-    if (filtroEstado === "terminadas") return s.activa === false;
+  const gastosFiltrados = gastos.filter((g) => {
+    if (filtroEstado === "generales") return g.esGeneral === true;
+    if (filtroEstado === "por-parcelas") return g.esGeneral === false;
     return true;
   });
 
@@ -191,9 +181,9 @@ export default function SiembrasPage() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Siembras</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Gastos</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Gestiona todas tus siembras
+            Gestiona todos tus gastos
           </p>
         </div>
         <div>
@@ -202,9 +192,9 @@ export default function SiembrasPage() {
               <SelectValue placeholder="Filtrar" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todas">Todas</SelectItem>
-              <SelectItem value="terminadas">Terminadas</SelectItem>
-              <SelectItem value="enProceso">En proceso</SelectItem>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="generales">Generales</SelectItem>
+              <SelectItem value="por-parcelas">Por parcelas</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -217,17 +207,16 @@ export default function SiembrasPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           </div>
-        ) : siembras.length === 0 ? (
+        ) : gastos.length === 0 ? (
           <div className="col-span-full text-center text-muted-foreground py-8">
-            No hay siembras disponibles
+            No hay gastos disponibles
           </div>
         ) : (
-          siembrasFiltradas.map((siembra) => (
-            <SiembraCard key={siembra.id} siembra={siembra} />
+          gastosFiltrados.map((gasto) => (
+            <GastoCard key={gasto.id} gasto={gasto} />
           ))
         )}
       </div>
-
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
@@ -239,9 +228,9 @@ export default function SiembrasPage() {
         </DialogTrigger>
         <DialogContent className="max-w-[95vw] sm:max-w-[425px] max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Nueva Siembra</DialogTitle>
+            <DialogTitle>Nuevo Gasto</DialogTitle>
             <DialogDescription>
-              Registra una nueva siembra en tu sistema de gestión.
+              Registra un nuevo gasto en tu sistema de gestión.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -251,21 +240,70 @@ export default function SiembrasPage() {
                   {formError}
                 </div>
               )}
-
               <div className="grid gap-1">
-                <Label htmlFor="parcelaId">
-                  Parcela <span className="text-red-500">*</span>
+                <Label htmlFor="monto">
+                  Monto <span className="text-red-500">*</span>
                 </Label>
+                <Input
+                  type="number"
+                  placeholder="120000"
+                  step="10"
+                  value={formData.monto}
+                  onChange={(e) =>
+                    setFormData({ ...formData, monto: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="concepto">
+                  Concepto <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="Compra de semillas"
+                  value={formData.concepto}
+                  onChange={(e) =>
+                    setFormData({ ...formData, concepto: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="fecha">
+                  Fecha de gasto <span className="text-red-500">*</span>
+                </Label>
+                <DatePicker
+                  date={selectedDate}
+                  onSelect={setSelectedDate}
+                  placeholder="Selecciona fecha"
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="concepto">Nota adicional</Label>
+                <Input
+                  placeholder="Semillas de maiz transgénico"
+                  value={formData.notaAdicional}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notaAdicional: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="parcelaId">Parcela</Label>
                 <Select
-                  value={formData.parcelaId}
+                  value={formData.parcelaId ?? "sin-parcelas"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, parcelaId: value })
+                    setFormData({
+                      ...formData,
+                      parcelaId: value === "sin-parcelas" ? undefined : value,
+                    })
                   }
                 >
                   <SelectTrigger id="parcelaId">
-                    <SelectValue placeholder="Selecciona una parcela" />
+                    <SelectValue placeholder="Gasto general (sin parcela)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="sin-parcelas">
+                      Gasto general (sin parcela)
+                    </SelectItem>
                     {parcelas.length > 0 ? (
                       parcelas.map((parcela) => (
                         <SelectItem
@@ -276,54 +314,12 @@ export default function SiembrasPage() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="sin-parcelas" disabled>
+                      <SelectItem value="sin-parcelas-disponibles" disabled>
                         No hay parcelas disponibles
                       </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="grid gap-1">
-                <Label htmlFor="cultivoId">
-                  Cultivo <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.cultivoId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, cultivoId: value })
-                  }
-                >
-                  <SelectTrigger id="cultivoId">
-                    <SelectValue placeholder="Selecciona un cultivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cultivos.length > 0 ? (
-                      cultivos.map((cultivo) => (
-                        <SelectItem
-                          key={cultivo.id}
-                          value={cultivo.id.toString()}
-                        >
-                          {cultivo.nombre} {cultivo.especie}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="sin-cultivos" disabled>
-                        No hay cultivos disponibles
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1">
-                <Label htmlFor="fecha">
-                  Fecha de inicio <span className="text-red-500">*</span>
-                </Label>
-                <DatePicker
-                  date={selectedDate}
-                  onSelect={setSelectedDate}
-                  placeholder="Selecciona fecha"
-                  disabledBefore={new Date()}
-                />
               </div>
             </div>
             <DialogFooter>
@@ -335,7 +331,7 @@ export default function SiembrasPage() {
                 Cancelar
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Guardando..." : "Guardar cultivo"}
+                {submitting ? "Guardando..." : "Guardar gasto"}
               </Button>
             </DialogFooter>
           </form>

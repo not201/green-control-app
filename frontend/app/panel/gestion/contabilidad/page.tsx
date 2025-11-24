@@ -61,7 +61,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-export default function AnaliticasPage() {
+export default function ContabilidadPage() {
   const [data, setData] = useState<AnaliticasData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -208,7 +208,7 @@ export default function AnaliticasPage() {
   return (
     <div className="flex flex-col gap-4 md:gap-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">Analíticas</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">Contabilidad</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
           Visualización de rendimiento y estadísticas financieras
         </p>
@@ -216,7 +216,9 @@ export default function AnaliticasPage() {
 
       {loading ? (
         <div className="place-items-center col-span-1 sm:col-span-2 lg:col-span-3">
-          <IconLoader className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center h-[50vh]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         </div>
       ) : !data ? (
         <div className="flex items-center justify-center p-8 text-center text-muted-foreground">
@@ -234,7 +236,7 @@ export default function AnaliticasPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-xl sm:text-2xl font-bold text-green-700 dark:text-green-300">
-                  ${data.totales.ingresosTotales.toLocaleString("es-CO")}
+                  $COP{data.totales.ingresosTotales.toLocaleString("es-CO")}
                 </div>
                 <p className="text-xs text-green-600 dark:text-green-500 mt-1">
                   Total acumulado
@@ -251,7 +253,7 @@ export default function AnaliticasPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-xl sm:text-2xl font-bold text-red-700 dark:text-red-300">
-                  ${data.totales.gastosTotales.toLocaleString("es-CO")}
+                  $COP{data.totales.gastosTotales.toLocaleString("es-CO")}
                 </div>
                 <p className="text-xs text-red-600 dark:text-red-500 mt-1">
                   Total acumulado
@@ -274,7 +276,7 @@ export default function AnaliticasPage() {
                       : "text-red-700 dark:text-red-300"
                   }`}
                 >
-                  ${data.totales.balanceTotal.toLocaleString("es-CO")}
+                  $COP{data.totales.balanceTotal.toLocaleString("es-CO")}
                 </div>
                 <p className="text-xs text-blue-600 dark:text-blue-500 mt-1">
                   Ingresos - Gastos
@@ -307,81 +309,6 @@ export default function AnaliticasPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Evolución Financiera</CardTitle>
-                <CardDescription>
-                  Comparación mensual de ingresos y gastos
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {data.analiticasTemporales &&
-                data.analiticasTemporales.length > 0 ? (
-                  <ChartContainer config={chartConfig}>
-                    <LineChart
-                      accessibilityLayer
-                      data={data.analiticasTemporales}
-                      margin={{ top: 12, bottom: 0, left: 12, right: 12 }}
-                    >
-                      <CartesianGrid vertical={false} />
-                      <XAxis
-                        dataKey="mes"
-                        tickLine={false}
-                        axisLine={false}
-                        tickMargin={8}
-                        tickFormatter={(value) => value.slice(0, 3)}
-                      />
-                      <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent />}
-                      />
-                      <Line
-                        dataKey="ingresos"
-                        type="monotone"
-                        stroke="var(--color-ingresos)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                      <Line
-                        dataKey="gastos"
-                        type="monotone"
-                        stroke="var(--color-gastos)"
-                        strokeWidth={2}
-                        dot={false}
-                      />
-                    </LineChart>
-                  </ChartContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-[300px] text-muted-foreground">
-                    No hay datos disponibles para mostrar
-                  </div>
-                )}
-              </CardContent>
-              {data.analiticasTemporales &&
-                data.analiticasTemporales.length > 0 && (
-                  <div className="border-t px-6 pt-6">
-                    <div className="flex w-full items-start gap-2 text-sm">
-                      <div className="grid gap-2">
-                        <div className="flex items-center gap-2 leading-none font-medium">
-                          Tendencia {tendencia} del{" "}
-                          {porcentajeTendencia?.toFixed(1)}%{" "}
-                          {tendencia === "positiva" ? (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <TrendingDown className="h-4 w-4 text-red-600" />
-                          )}
-                        </div>
-                        <div className="text-muted-foreground flex items-center gap-2 leading-none">
-                          Mostrando análisis financiero de{" "}
-                          {data.analiticasTemporales.length} mes
-                          {data.analiticasTemporales.length !== 1 ? "es" : ""}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-            </Card>
-
             <Card>
               <CardHeader>
                 <CardTitle>Evolución Financiera</CardTitle>

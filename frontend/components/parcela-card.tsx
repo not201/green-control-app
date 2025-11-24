@@ -29,7 +29,7 @@ export function ParcelaCard({
       className={`@container/card transition-colors hover:border-primary/40`}
       asChild
     >
-      <Link href={`/panel/gestion/parcelas/${parcela.id}`}>
+      <Link href={`/panel/gestion/siembras/parcelas/${parcela.id}`}>
         <ItemContent className="min-w-0">
           <ItemHeader>
             <ItemTitle className="text-lg truncate">

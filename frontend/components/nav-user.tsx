@@ -26,6 +26,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeToggle, useTheme } from "./theme-toggle";
+import Link from "next/link";
 
 export function NavUser({
   user,
@@ -92,20 +93,28 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <IconUserCircle />
-                Cuenta
+              <DropdownMenuItem asChild>
+                <Link href="/panel/cuenta" className="cursor-pointer">
+                  <IconUserCircle />
+                  Cuenta
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem
-                className="cursor-pointer"
+                className="flex items-center gap-2 cursor-pointer"
                 onSelect={(e) => e.preventDefault()}
+                onClick={() => {
+                  const checkbox = document.getElementById(
+                    "theme-switch",
+                  ) as HTMLButtonElement;
+                  checkbox?.click();
+                }}
               >
                 {isDark ? (
                   <IconMoon className="size-4" />
                 ) : (
                   <IconSun className="size-4" />
                 )}
-                <span className="flex-1">Tema</span>
+                <span className="flex-1 select-none">Tema</span>
                 <ThemeToggle />
               </DropdownMenuItem>
             </DropdownMenuGroup>

@@ -1,7 +1,6 @@
 "use client";
 
-import { DatePicker } from "@/components/date-picker";
-import { SiembraCard } from "@/components/siembra-card";
+import { TareaCard } from "@/components/tarea-card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,21 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { IconLoader } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
 import * as React from "react";
+import { DatePicker } from "@/components/date-picker";
+import { Input } from "@/components/ui/input";
+import { IconLoader } from "@tabler/icons-react";
 
-interface Siembra {
-  id: number;
-  nombreParcela: string;
-  nombreCultivo: string;
-  activa: boolean;
-}
-
-interface Cultivo {
+interface Tarea {
   id: number;
   nombre: string;
-  especie: string;
+  descripcion: string;
+  nombreParcela: string;
+  completada: boolean;
 }
 
 interface Parcela {
@@ -44,35 +40,35 @@ interface Parcela {
   tieneSiembra: boolean;
 }
 
-export default function SiembrasPage() {
-  const [cultivos, setCultivos] = React.useState<Cultivo[]>([]);
-  const [parcelas, setParcelas] = React.useState<Parcela[]>([]);
+export default function Tareas() {
   const [filtroEstado, setFiltroEstado] = React.useState("todas");
-  const [siembras, setSiembras] = React.useState<Siembra[]>([]);
+  const [parcelas, setParcelas] = React.useState<Parcela[]>([]);
+  const [tareas, setTareas] = React.useState<Tarea[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [submitting, setSubmitting] = React.useState(false);
-  const [formError, setFormError] = React.useState("");
-  const [open, setOpen] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     new Date(),
   );
+  const [formError, setFormError] = React.useState("");
+  const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
     parcelaId: "",
-    cultivoId: "",
+    nombre: "",
+    descripcion: "",
   });
 
   React.useEffect(() => {
-    const fetchSiembra = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Siembra`, {
+    const fetchTarea = async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Tarea`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
         },
       });
 
       if (res.ok) {
-        const { data }: { data: Siembra[] } = await res.json();
+        const { data }: { data: Tarea[] } = await res.json();
 
-        setSiembras(data);
+        setTareas(data);
 
         setLoading(false);
       }
@@ -94,38 +90,26 @@ export default function SiembrasPage() {
       }
     };
 
-    const fetchCultivo = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Cultivo`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
-        },
-      });
-
-      if (res.ok) {
-        const { data }: { data: Cultivo[] } = await res.json();
-
-        setCultivos(data);
-
-        setLoading(false);
-      }
-    };
-
-    fetchCultivo();
+    fetchTarea();
     fetchParcela();
-    fetchSiembra();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
 
-    if (!formData.parcelaId.trim()) {
-      setFormError("La parcela es requerida");
+    if (!formData.nombre.trim()) {
+      setFormError("El nombre es requerido");
       return;
     }
 
-    if (!formData.cultivoId.trim()) {
-      setFormError("El cultivo es requerido");
+    if (!formData.descripcion.trim()) {
+      setFormError("La descripción es requerida");
+      return;
+    }
+
+    if (!formData.parcelaId.trim()) {
+      setFormError("La parcela es requerida");
       return;
     }
 
@@ -136,54 +120,55 @@ export default function SiembrasPage() {
 
     setSubmitting(true);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Siembra`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Tarea`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
       },
       body: JSON.stringify({
-        cultivoId: formData.cultivoId,
         parcelaId: formData.parcelaId,
-        fechaInicio: selectedDate,
+        nombre: formData.nombre,
+        descripcion: formData.descripcion,
+        fechaProgramada: selectedDate,
       }),
     });
 
     if (!res.ok) {
       const errorData = await res.json();
 
-      setFormError(errorData.mensaje);
+      setFormError("Error al crear tarea");
       console.log(errorData);
-
-      setSubmitting(false);
 
       return;
     }
 
-    const { data }: { data: Siembra } = await res.json();
+    const { data }: { data: Tarea } = await res.json();
 
-    setSiembras((prev) => [
+    setTareas((prev) => [
       ...prev,
       {
         id: data.id,
         nombreParcela: data.nombreParcela,
-        nombreCultivo: data.nombreCultivo,
-        activa: data.activa,
+        nombre: data.nombre,
+        completada: data.completada,
+        descripcion: data.descripcion,
       },
     ]);
 
     setFormData({
-      cultivoId: "",
       parcelaId: "",
+      nombre: "",
+      descripcion: "",
     });
 
     setOpen(false);
     setSubmitting(false);
   };
 
-  const siembrasFiltradas = siembras.filter((s) => {
-    if (filtroEstado === "enProceso") return s.activa === true;
-    if (filtroEstado === "terminadas") return s.activa === false;
+  const tareasFiltradas = tareas.filter((t) => {
+    if (filtroEstado === "completadas") return t.completada === true;
+    if (filtroEstado === "pendientes") return t.completada === false;
     return true;
   });
 
@@ -191,9 +176,9 @@ export default function SiembrasPage() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Siembras</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Tareas</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Gestiona todas tus siembras
+            Organiza y gestiona todas tus tareas agrícolas
           </p>
         </div>
         <div>
@@ -203,8 +188,8 @@ export default function SiembrasPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="todas">Todas</SelectItem>
-              <SelectItem value="terminadas">Terminadas</SelectItem>
-              <SelectItem value="enProceso">En proceso</SelectItem>
+              <SelectItem value="completadas">Completadas</SelectItem>
+              <SelectItem value="pendientes">Pendientes</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -217,13 +202,13 @@ export default function SiembrasPage() {
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           </div>
-        ) : siembras.length === 0 ? (
+        ) : tareas.length === 0 ? (
           <div className="col-span-full text-center text-muted-foreground py-8">
-            No hay siembras disponibles
+            No hay tareas disponibles
           </div>
         ) : (
-          siembrasFiltradas.map((siembra) => (
-            <SiembraCard key={siembra.id} siembra={siembra} />
+          tareasFiltradas.map((tarea) => (
+            <TareaCard key={tarea.id} tarea={tarea} />
           ))
         )}
       </div>
@@ -239,9 +224,9 @@ export default function SiembrasPage() {
         </DialogTrigger>
         <DialogContent className="max-w-[95vw] sm:max-w-[425px] max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Nueva Siembra</DialogTitle>
+            <DialogTitle>Nueva Tarea</DialogTitle>
             <DialogDescription>
-              Registra una nueva siembra en tu sistema de gestión.
+              Agrega una nueva tarea a tu sistema de gestión.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -251,6 +236,31 @@ export default function SiembrasPage() {
                   {formError}
                 </div>
               )}
+              <div className="grid gap-1">
+                <Label htmlFor="nombre">
+                  Nombre <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="Mantenimiento"
+                  value={formData.nombre}
+                  onChange={(e) =>
+                    setFormData({ ...formData, nombre: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="grid gap-1">
+                <Label htmlFor="descripcion">
+                  Descripción <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  placeholder="Mantenimiento de la parcela"
+                  value={formData.descripcion}
+                  onChange={(e) =>
+                    setFormData({ ...formData, descripcion: e.target.value })
+                  }
+                />
+              </div>
 
               <div className="grid gap-1">
                 <Label htmlFor="parcelaId">
@@ -284,39 +294,8 @@ export default function SiembrasPage() {
                 </Select>
               </div>
               <div className="grid gap-1">
-                <Label htmlFor="cultivoId">
-                  Cultivo <span className="text-red-500">*</span>
-                </Label>
-                <Select
-                  value={formData.cultivoId}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, cultivoId: value })
-                  }
-                >
-                  <SelectTrigger id="cultivoId">
-                    <SelectValue placeholder="Selecciona un cultivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cultivos.length > 0 ? (
-                      cultivos.map((cultivo) => (
-                        <SelectItem
-                          key={cultivo.id}
-                          value={cultivo.id.toString()}
-                        >
-                          {cultivo.nombre} {cultivo.especie}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="sin-cultivos" disabled>
-                        No hay cultivos disponibles
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-1">
                 <Label htmlFor="fecha">
-                  Fecha de inicio <span className="text-red-500">*</span>
+                  Fecha programada <span className="text-red-500">*</span>
                 </Label>
                 <DatePicker
                   date={selectedDate}
@@ -335,7 +314,7 @@ export default function SiembrasPage() {
                 Cancelar
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Guardando..." : "Guardar cultivo"}
+                {submitting ? "Guardando..." : "Guardar tarea"}
               </Button>
             </DialogFooter>
           </form>

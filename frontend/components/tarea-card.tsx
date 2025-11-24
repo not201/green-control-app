@@ -27,7 +27,7 @@ export function TareaCard({
       className={`@container/card transition-colors hover:border-primary/40 ${!tarea.completada ? "bg-primary/5 border-primary/30" : ""}`}
       asChild
     >
-      <Link href={`/panel/gestion/tareas/${tarea.id}`}>
+      <Link href={`/panel/general/tareas/${tarea.id}`}>
         <ItemContent className="min-w-0">
           <ItemHeader>
             <ItemTitle className="text-lg truncate">

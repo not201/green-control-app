@@ -7,13 +7,9 @@ import {
   IconChecklist,
   IconDashboard,
   IconHelp,
-  IconInnerShadowTop,
-  IconLeaf,
-  IconMapPin,
   IconMessageCircle,
   IconPlant,
-  IconTrendingDown,
-  IconTrendingUp,
+  IconSeedlingFilled,
 } from "@tabler/icons-react";
 
 import { NavSidebar } from "@/components/nav-sidebar";
@@ -37,14 +33,14 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "Analíticas",
-      url: "/panel/general/analiticas",
-      icon: IconChartBar,
-    },
-    {
       title: "Notificaciones",
       url: "/panel/general/notificaciones",
       icon: IconBell,
+    },
+    {
+      title: "Tareas",
+      url: "/panel/general/tareas",
+      icon: IconChecklist,
     },
   ],
   navGestion: [
@@ -52,45 +48,38 @@ const data = {
       title: "Siembras",
       url: "/panel/gestion/siembras",
       icon: IconPlant,
+      items: [
+        {
+          title: "Parcelas",
+          url: "/panel/gestion/siembras/parcelas",
+        },
+        {
+          title: "Cultivos",
+          url: "/panel/gestion/siembras/cultivos",
+        },
+      ],
     },
     {
-      title: "Parcelas",
-      url: "/panel/gestion/parcelas",
-      icon: IconMapPin,
-    },
-    {
-      title: "Cultivos",
-      url: "/panel/gestion/cultivos",
-      icon: IconLeaf,
-    },
-    {
-      title: "Tareas",
-      url: "/panel/gestion/tareas",
-      icon: IconChecklist,
-    },
-  ],
-  navContabilidad: [
-    {
-      title: "Costes",
-      url: "/panel/contabilidad/costes",
-      icon: IconTrendingDown,
-    },
-    {
-      title: "Ingresos",
-      url: "/panel/contabilidad/ingresos",
-      icon: IconTrendingUp,
+      title: "Contabilidad",
+      url: "/panel/gestion/contabilidad",
+      icon: IconChartBar,
+      items: [
+        {
+          title: "Gastos",
+          url: "/panel/gestion/contabilidad/gastos",
+        },
+        {
+          title: "Ingresos",
+          url: "/panel/gestion/contabilidad/ingresos",
+        },
+      ],
     },
   ],
   navOptions: [
     {
       title: "Ayuda",
-      url: "#",
+      url: "/panel/ayuda",
       icon: IconHelp,
-    },
-    {
-      title: "Soporte",
-      url: "#",
-      icon: IconMessageCircle,
     },
   ],
 };
@@ -144,7 +133,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <Link href="/panel">
-                <IconInnerShadowTop className="size-5!" />
+                <IconSeedlingFilled className="size-5!" />
                 <span className="text-base font-semibold">Green Control</span>
               </Link>
             </SidebarMenuButton>
@@ -154,7 +143,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavSidebar label="General" items={data.navGeneral} />
         <NavSidebar label="Gestión" items={data.navGestion} />
-        <NavSidebar label="Contabilidad" items={data.navContabilidad} />
         <NavSidebar items={data.navOptions} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

@@ -9,24 +9,26 @@ export function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const currentIsDark = document.documentElement.classList.contains("dark");
-    setIsDark(currentIsDark);
+    const saved = localStorage.getItem("theme");
+    const isDarkMode = saved === "dark";
+    document.documentElement.classList.toggle("dark", isDarkMode);
+    setIsDark(isDarkMode);
   }, []);
 
-  const handleThemeChange = (checked: boolean) => {
+  const toggleTheme = (checked: boolean) => {
     setIsDark(checked);
-    localStorage.setItem("theme", checked ? "dark" : "light");
     document.documentElement.classList.toggle("dark", checked);
+    localStorage.setItem("theme", checked ? "dark" : "light");
   };
 
-  if (!mounted) {
-    return <Switch checked={false} disabled />;
-  }
+  if (!mounted) return null;
 
   return (
     <Switch
+      id="theme-switch"
       checked={isDark}
-      onCheckedChange={handleThemeChange}
+      onCheckedChange={toggleTheme}
+      onClick={(e) => e.stopPropagation()}
       className="data-[state=checked]:bg-primary"
     />
   );
@@ -36,12 +38,13 @@ export function useTheme() {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    const currentIsDark = document.documentElement.classList.contains("dark");
-    setIsDark(currentIsDark);
-
-    const observer = new MutationObserver(() => {
+    const updateTheme = () => {
       setIsDark(document.documentElement.classList.contains("dark"));
-    });
+    };
+
+    updateTheme();
+
+    const observer = new MutationObserver(updateTheme);
 
     observer.observe(document.documentElement, {
       attributes: true,

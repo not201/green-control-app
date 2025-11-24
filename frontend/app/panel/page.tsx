@@ -152,7 +152,9 @@ export default function PanelPage() {
 
       {loading ? (
         <div className="place-items-center col-span-1 sm:col-span-2 lg:col-span-3">
-          <IconLoader className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="flex items-center justify-center h-[50vh]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
         </div>
       ) : !data ? (
         <div className="flex items-center justify-center p-8 text-center text-muted-foreground">

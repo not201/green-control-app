@@ -1,6 +1,7 @@
 "use client";
 
-import { TareaCard } from "@/components/tarea-card";
+import { DatePicker } from "@/components/date-picker";
+import { IngresoCard } from "@/components/ingreso-card";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -19,18 +21,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { IconLoader } from "@tabler/icons-react";
 import { Plus } from "lucide-react";
 import * as React from "react";
-import { DatePicker } from "@/components/date-picker";
-import { Input } from "@/components/ui/input";
-import { IconLoader } from "@tabler/icons-react";
 
-interface Tarea {
+interface Ingreso {
   id: number;
-  nombre: string;
-  descripcion: string;
-  nombreParcela: string;
-  completada: boolean;
+  fecha: string;
+  monto: number;
+  concepto: string;
+
+  nombreParcela?: string;
+  esGeneral: boolean;
 }
 
 interface Parcela {
@@ -40,35 +42,36 @@ interface Parcela {
   tieneSiembra: boolean;
 }
 
-export default function Tareas() {
-  const [filtroEstado, setFiltroEstado] = React.useState("todas");
-  const [parcelas, setParcelas] = React.useState<Parcela[]>([]);
-  const [tareas, setTareas] = React.useState<Tarea[]>([]);
+export default function IngresoPage() {
+  const [ingresos, setIngresos] = React.useState<Ingreso[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [parcelas, setParcelas] = React.useState<Parcela[]>([]);
   const [submitting, setSubmitting] = React.useState(false);
+  const [filtroEstado, setFiltroEstado] = React.useState("todos");
+  const [formError, setFormError] = React.useState("");
+  const [open, setOpen] = React.useState(false);
   const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(
     new Date(),
   );
-  const [formError, setFormError] = React.useState("");
-  const [open, setOpen] = React.useState(false);
   const [formData, setFormData] = React.useState({
-    parcelaId: "",
-    nombre: "",
-    descripcion: "",
+    monto: "",
+    concepto: "",
+    notaAdicional: "",
+    parcelaId: undefined as string | undefined,
   });
 
   React.useEffect(() => {
-    const fetchTarea = async () => {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Tarea`, {
+    const fetchIngreso = async () => {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Ingreso`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
         },
       });
 
       if (res.ok) {
-        const { data }: { data: Tarea[] } = await res.json();
+        const { data }: { data: Ingreso[] } = await res.json();
 
-        setTareas(data);
+        setIngresos(data);
 
         setLoading(false);
       }
@@ -90,85 +93,87 @@ export default function Tareas() {
       }
     };
 
-    fetchTarea();
     fetchParcela();
+    fetchIngreso();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
 
-    if (!formData.nombre.trim()) {
-      setFormError("El nombre es requerido");
+    if (!formData.monto.trim()) {
+      setFormError("El monto es requerido");
       return;
     }
 
-    if (!formData.descripcion.trim()) {
-      setFormError("La descripción es requerida");
-      return;
-    }
-
-    if (!formData.parcelaId.trim()) {
-      setFormError("La parcela es requerida");
+    if (!formData.concepto.trim()) {
+      setFormError("El concepto es requerido");
       return;
     }
 
     if (!selectedDate) {
-      setFormError("La fecha es requerida");
+      setFormError("La fecha de Ingreso es requerida");
       return;
     }
 
     setSubmitting(true);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Tarea`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/Ingreso`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("jwToken")}`,
       },
       body: JSON.stringify({
+        monto: formData.monto,
+        concepto: formData.concepto,
+        fecha: selectedDate,
+
+        notaAdicional: formData.notaAdicional,
         parcelaId: formData.parcelaId,
-        nombre: formData.nombre,
-        descripcion: formData.descripcion,
-        fechaProgramada: selectedDate,
       }),
     });
 
     if (!res.ok) {
       const errorData = await res.json();
 
-      setFormError("Error al crear tarea");
+      setFormError("Error al crear Ingreso");
       console.log(errorData);
+
+      setSubmitting(false);
 
       return;
     }
 
-    const { data }: { data: Tarea } = await res.json();
+    const { data }: { data: Ingreso } = await res.json();
 
-    setTareas((prev) => [
+    setIngresos((prev) => [
       ...prev,
       {
         id: data.id,
+        fecha: data.fecha,
+        monto: data.monto,
+        concepto: data.concepto,
+
         nombreParcela: data.nombreParcela,
-        nombre: data.nombre,
-        completada: data.completada,
-        descripcion: data.descripcion,
+        esGeneral: data.esGeneral,
       },
     ]);
 
     setFormData({
-      parcelaId: "",
-      nombre: "",
-      descripcion: "",
+      concepto: "",
+      monto: "",
+      notaAdicional: "",
+      parcelaId: undefined as string | undefined,
     });
 
     setOpen(false);
     setSubmitting(false);
   };
 
-  const tareasFiltradas = tareas.filter((t) => {
-    if (filtroEstado === "completadas") return t.completada === true;
-    if (filtroEstado === "pendientes") return t.completada === false;
+  const ingresosFiltrados = ingresos.filter((i) => {
+    if (filtroEstado === "generales") return i.esGeneral === true;
+    if (filtroEstado === "por-parcelas") return i.esGeneral === false;
     return true;
   });
 
@@ -176,9 +181,9 @@ export default function Tareas() {
     <div className="flex flex-col gap-4 md:gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold">Tareas</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Ingresos</h1>
           <p className="text-sm sm:text-base text-muted-foreground">
-            Organiza y gestiona todas tus tareas agrícolas
+            Gestiona todos tus ingresos
           </p>
         </div>
         <div>
@@ -187,9 +192,9 @@ export default function Tareas() {
               <SelectValue placeholder="Filtrar" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="todas">Todas</SelectItem>
-              <SelectItem value="completadas">Completadas</SelectItem>
-              <SelectItem value="pendientes">Pendientes</SelectItem>
+              <SelectItem value="todos">Todos</SelectItem>
+              <SelectItem value="generales">Generales</SelectItem>
+              <SelectItem value="por-parcelas">Por parcelas</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -198,19 +203,20 @@ export default function Tareas() {
       <div className="*:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card dark:*:data-[slot=card]:bg-card grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:shadow-xs">
         {loading ? (
           <div className="place-items-center col-span-1 sm:col-span-2 lg:col-span-3">
-            <IconLoader className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex items-center justify-center h-[50vh]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
           </div>
-        ) : tareas.length === 0 ? (
+        ) : ingresos.length === 0 ? (
           <div className="col-span-full text-center text-muted-foreground py-8">
-            No hay tareas disponibles
+            No hay Ingresos disponibles
           </div>
         ) : (
-          tareasFiltradas.map((tarea) => (
-            <TareaCard key={tarea.id} tarea={tarea} />
+          ingresosFiltrados.map((ingreso) => (
+            <IngresoCard key={ingreso.id} ingreso={ingreso} />
           ))
         )}
       </div>
-
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           <Button
@@ -222,9 +228,9 @@ export default function Tareas() {
         </DialogTrigger>
         <DialogContent className="max-w-[95vw] sm:max-w-[425px] max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Nueva Tarea</DialogTitle>
+            <DialogTitle>Nuevo Ingreso</DialogTitle>
             <DialogDescription>
-              Agrega una nueva tarea a tu sistema de gestión.
+              Registra un nuevo ingreso en tu sistema de gestión.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit}>
@@ -235,45 +241,69 @@ export default function Tareas() {
                 </div>
               )}
               <div className="grid gap-1">
-                <Label htmlFor="nombre">
-                  Nombre <span className="text-red-500">*</span>
+                <Label htmlFor="monto">
+                  Monto <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  placeholder="Mantenimiento"
-                  value={formData.nombre}
+                  type="number"
+                  placeholder="120000"
+                  step="10"
+                  value={formData.monto}
                   onChange={(e) =>
-                    setFormData({ ...formData, nombre: e.target.value })
+                    setFormData({ ...formData, monto: e.target.value })
                   }
                 />
               </div>
-
               <div className="grid gap-1">
-                <Label htmlFor="descripcion">
-                  Descripción <span className="text-red-500">*</span>
+                <Label htmlFor="concepto">
+                  Concepto <span className="text-red-500">*</span>
                 </Label>
                 <Input
-                  placeholder="Mantenimiento de la parcela"
-                  value={formData.descripcion}
+                  placeholder="Compra de semillas"
+                  value={formData.concepto}
                   onChange={(e) =>
-                    setFormData({ ...formData, descripcion: e.target.value })
+                    setFormData({ ...formData, concepto: e.target.value })
                   }
                 />
               </div>
-
               <div className="grid gap-1">
-                <Label htmlFor="parcelaId">
-                  Parcela <span className="text-red-500">*</span>
+                <Label htmlFor="fecha">
+                  Fecha de ingreso <span className="text-red-500">*</span>
                 </Label>
+                <DatePicker
+                  date={selectedDate}
+                  onSelect={setSelectedDate}
+                  placeholder="Selecciona fecha"
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="concepto">Nota adicional</Label>
+                <Input
+                  placeholder="Semillas de maiz transgénico"
+                  value={formData.notaAdicional}
+                  onChange={(e) =>
+                    setFormData({ ...formData, notaAdicional: e.target.value })
+                  }
+                />
+              </div>
+              <div className="grid gap-1">
+                <Label htmlFor="parcelaId">Parcela</Label>
                 <Select
-                  value={formData.parcelaId}
+                  value={formData.parcelaId ?? "sin-parcelas"}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, parcelaId: value })
+                    setFormData({
+                      ...formData,
+                      parcelaId: value === "sin-parcelas" ? undefined : value,
+                    })
                   }
                 >
                   <SelectTrigger id="parcelaId">
-                    <SelectValue placeholder="Selecciona una parcela" />
+                    <SelectValue placeholder="Ingreso general (sin parcela)" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="sin-parcelas">
+                      Ingreso general (sin parcela)
+                    </SelectItem>
                     {parcelas.length > 0 ? (
                       parcelas.map((parcela) => (
                         <SelectItem
@@ -284,23 +314,12 @@ export default function Tareas() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="sin-parcelas" disabled>
+                      <SelectItem value="sin-parcelas-disponibles" disabled>
                         No hay parcelas disponibles
                       </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
-              </div>
-              <div className="grid gap-1">
-                <Label htmlFor="fecha">
-                  Fecha programada <span className="text-red-500">*</span>
-                </Label>
-                <DatePicker
-                  date={selectedDate}
-                  onSelect={setSelectedDate}
-                  placeholder="Selecciona fecha"
-                  disabledBefore={new Date()}
-                />
               </div>
             </div>
             <DialogFooter>
@@ -312,7 +331,7 @@ export default function Tareas() {
                 Cancelar
               </Button>
               <Button type="submit" disabled={submitting}>
-                {submitting ? "Guardando..." : "Guardar tarea"}
+                {submitting ? "Guardando..." : "Guardar ingreso"}
               </Button>
             </DialogFooter>
           </form>

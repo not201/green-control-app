@@ -22,7 +22,7 @@ export function CultivoCard({
       className={`@container/card transition-colors hover:border-primary/40`}
       asChild
     >
-      <Link href={`/panel/gestion/cultivos/${cultivo.id}`}>
+      <Link href={`/panel/gestion/siembras/cultivos/${cultivo.id}`}>
         <ItemContent className="min-w-0">
           <ItemHeader>
             <ItemTitle className="text-lg truncate">{cultivo.nombre}</ItemTitle>
