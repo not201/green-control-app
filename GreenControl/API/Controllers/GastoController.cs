@@ -24,11 +24,6 @@ namespace GreenControl.API.Controllers
             _context = context;
         }
 
-        /// <summary>
-        /// Obtener gastos con filtros opcionales
-        /// </summary>
-        /// <param name="tipo">Filtro: "general", "parcela", o null para todos</param>
-        /// <param name="parcelaId">Filtrar por parcela específica</param>
         [HttpGet]
         public async Task<IActionResult> GetAll([FromQuery] string? tipo, [FromQuery] int? parcelaId)
         {

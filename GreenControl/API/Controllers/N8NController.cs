@@ -20,10 +20,6 @@ namespace GreenControl.API.Controllers
             _context = context;
         }
 
-        /// <summary>
-        /// Obtiene todos los usuarios con sus tareas programadas para los próximos X días
-        /// </summary>
-        /// <param name="dias">Número de días desde hoy para filtrar tareas (ej: 1 = mañana, 0 = hoy)</param>
         [HttpGet("tareas")]
         public async Task<IActionResult> GetTareasPorDias([FromQuery] int dias = 1)
         {
@@ -71,11 +67,6 @@ namespace GreenControl.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Obtiene tareas en un rango de días
-        /// </summary>
-        /// <param name="desde">Días desde hoy (inicio del rango)</param>
-        /// <param name="hasta">Días desde hoy (fin del rango)</param>
         [HttpGet("tareas/rango")]
         public async Task<IActionResult> GetTareasPorRango([FromQuery] int desde = 0, [FromQuery] int hasta = 7)
         {
@@ -126,9 +117,6 @@ namespace GreenControl.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Obtiene tareas vencidas (fecha programada ya pasó y no están completadas)
-        /// </summary>
         [HttpGet("tareas/vencidas")]
         public async Task<IActionResult> GetTareasVencidas()
         {
@@ -176,18 +164,12 @@ namespace GreenControl.API.Controllers
             }
         }
 
-        /// <summary>
-        /// Obtiene tareas de hoy
-        /// </summary>
         [HttpGet("tareas/hoy")]
         public async Task<IActionResult> GetTareasHoy()
         {
             return await GetTareasPorDias(0);
         }
 
-        /// <summary>
-        /// Obtiene tareas de mañana
-        /// </summary>
         [HttpGet("tareas/manana")]
         public async Task<IActionResult> GetTareasManana()
         {
